@@ -6,4 +6,8 @@
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [cheshire "5.7.0"]]
   :target-path "target/%s"
-  :profiles {:uberjar {:aot :all}})
+  :profiles {:uberjar {:aot :all}}
+  :repositories [["releases" {:url "https://clojars.org/repo"
+                              :creds :gpg}]
+                 ["snapshots" {:url "https://clojars.org/repo"
+                               :creds :gpg}]])
