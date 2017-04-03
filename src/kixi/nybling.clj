@@ -5,7 +5,7 @@
   (:gen-class
    :name kixi.nybling
    :methods [#^{:static true} [ednStringToJsonString [java.lang.String] java.lang.String]
-             #^{:static true} [nippyByteArrayToJsonString [java.lang.String] java.lang.String]]))
+             #^{:static true} [nippyByteArrayToJsonString [bytes] java.lang.String]]))
 
 (defn edn-str-to-json-str
   "I take an EDN string and convert it to a JSON string"

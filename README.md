@@ -13,6 +13,13 @@ A tiny library that converts between formats.
 => "{\"foo\":\"bar\"}"
 ```
 
+## Deployment
+
+To send to Clojars with AOT:
+``` bash
+lein with-profile uberjar deploy clojars
+```
+
 ## License
 
 Copyright © 2017 MastodonC Ltd
