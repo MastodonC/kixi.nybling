@@ -1,6 +1,6 @@
-(defproject kixi.nybling "0.1.1-SNAPSHOT"
-  :description "FIXME: write description"
-  :url "http://example.com/FIXME"
+(defproject kixi/kixi.nybling "0.1.1-SNAPSHOT"
+  :description "A tiny library that converts formats"
+  :url "http://github.com/mastodonc/kixi.nybling"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.8.0"]
