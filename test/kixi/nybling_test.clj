@@ -20,7 +20,7 @@
            (edn-str-to-json-str "{:foo 1 :bar [1 2 3] :baz {:a \"a\" :b [\"b\" 1 2 \"b2\"]}}")))))
 
 (deftest nippy-test
-  (testing "Nippy string to JSON string"
+  (testing "Nippy byte array to JSON string"
     (is (= "{\"foo\":\"bar\"}"
            (nippy-byte-array-to-json-str (nippy/freeze {:foo "bar"}))))
     (is (= (json/generate-string cleaned-stress-data)
