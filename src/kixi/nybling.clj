@@ -12,7 +12,7 @@
   [e]
   ((comp json/generate-string edn/read-string) e))
 
-(defn ednStringToJsonString
+(defn -ednStringToJsonString
   [e]
   (edn-str-to-json-str e))
 
@@ -21,6 +21,6 @@
   [e]
   ((comp json/generate-string nippy/thaw) e))
 
-(defn nippyByteArrayToJsonString
+(defn -nippyByteArrayToJsonString
   [e]
   (nippy-byte-array-to-json-str e))
