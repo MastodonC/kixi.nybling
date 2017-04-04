@@ -1,6 +1,6 @@
 # kixi.nybling
 
-A tiny library that converts between formats.
+A tiny library that converts between formats. Includes Java bindings for easy interop.
 
 ``` clojure
 [kixi/kixi.nybling "<version>"]
@@ -10,6 +10,9 @@ A tiny library that converts between formats.
 
 ``` clojure
 (edn-str-to-json-str "{:foo \"bar\"}")
+=> "{\"foo\":\"bar\"}"
+
+(nippy-byte-array-to-json-str some-bytes)
 => "{\"foo\":\"bar\"}"
 ```
 
