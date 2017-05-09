@@ -4,13 +4,6 @@
             [cheshire.core :as json]
             [taoensso.nippy :as nippy]))
 
-(def cleaned-stress-data
-  (dissoc nippy/stress-data
-          :exception
-          :ex-info
-          :regex
-          :throwable))
-
 (deftest edn-test
   (testing "EDN string to JSON string"
     (is (= "{\"foo\":\"bar\"}"
@@ -23,5 +16,5 @@
   (testing "Nippy byte array to JSON string"
     (is (= "{\"foo\":\"bar\"}"
            (nippy-byte-array-to-json-str (nippy/freeze {:foo "bar"}))))
-    (is (= (json/generate-string cleaned-stress-data)
+    (is (= (json/generate-string nippy/stress-data)
            (nippy-byte-array-to-json-str (nippy/freeze cleaned-stress-data))))))
