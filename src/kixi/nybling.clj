@@ -7,7 +7,7 @@
             [taoensso.nippy :as nippy]
             [kixi.log.timbre.appenders.logstash :refer [exception->map]])
   (:import (com.fasterxml.jackson.core JsonGenerator JsonGenerationException)
-           (com.amazonaws.services.lambda.runtime.events 
+           (com.amazonaws.services.lambda.runtime.events
             KinesisEvent
             KinesisEvent$KinesisEventRecord
             KinesisEvent$Record)
@@ -17,7 +17,6 @@
   (:gen-class
    :name kixi.nybling
    :methods [#^{:static true} [ednStringToJsonString [java.lang.String] java.lang.String]
-             #^{:static true} [nippyByteArrayToJsonString [bytes] java.lang.String]
              #^{:static true} [kinesisEventRecordToJsonVersions [com.amazonaws.services.lambda.runtime.events.KinesisEvent$KinesisEventRecord] java.util.List]]))
 
 (def project-definition (some-> (io/resource "project.clj") slurp edn/read-string))
@@ -51,21 +50,26 @@
   [e]
   (edn-str-to-json-str e))
 
-(defn nippy-byte-array-to-json-str
-  "I take a Nippy byte-array and convert it to a JSON string"
-  [e]
-  ((comp json/generate-string nippy/thaw) e))
+(defn stacktrace-element->vec
+  [^StackTraceElement ste]
+  [(.getClassName ste) (.getFileName ste) (.getLineNumber ste) (.getMethodName ste)])
 
-(defn -nippyByteArrayToJsonString
-  [e]
-  (nippy-byte-array-to-json-str e))
+(def transit-handlers
+  {java.util.regex.Pattern (transit/write-handler "pattern" (fn [o] (str o)))
+   java.lang.Throwable (transit/write-handler "throwable" (fn [o] (exception->map o)))
+   java.lang.Exception (transit/write-handler "exception" (fn [o] (exception->map o)))
+   clojure.lang.ExceptionInfo (transit/write-handler "exceptioninfo" (fn [^clojure.lang.ExceptionInfo o]
+                                                                       {:data (.getData o)
+                                                                        :exception (exception->map o)}))})
 
-(defn- clj->transit
+(defn clj->transit
   ([m]
    (clj->transit m :json))
   ([m t]
    (let [out (ByteArrayOutputStream. 4096)
-         writer (transit/writer out t)]
+         writer (transit/writer out
+                                t
+                                {:handlers transit-handlers})]
      (transit/write writer m)
      (.toString out))))
 

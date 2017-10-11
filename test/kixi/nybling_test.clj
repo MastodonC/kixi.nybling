@@ -12,9 +12,14 @@
     (is (= "{\"foo\":1,\"bar\":[1,2,3],\"baz\":{\"a\":\"a\",\"b\":[\"b\",1,2,\"b2\"]}}"
            (edn-str-to-json-str "{:foo 1 :bar [1 2 3] :baz {:a \"a\" :b [\"b\" 1 2 \"b2\"]}}")))))
 
-(deftest nippy-test
-  (testing "Nippy byte array to JSON string"
-    (is (= "{\"foo\":\"bar\"}"
-           (nippy-byte-array-to-json-str (nippy/freeze {:foo "bar"}))))
-    (is (= (json/generate-string nippy/stress-data)
-           (nippy-byte-array-to-json-str (nippy/freeze cleaned-stress-data))))))
+(deftest transit-test
+  (testing "Simples"
+    (is (= "[\"^ \",\"~:foo\",\"bar\"]"
+           (clj->transit {:foo "bar"}))))
+  (testing "Pattern"
+    (is (= "[\"^ \",\"~:foo\",[\"~#pattern\",\"bar\"]]"
+           (clj->transit {:foo #"bar"}))))
+  (testing "Exception"
+    (is (string? (clj->transit {:foo (new Exception "msg")}))))
+  (testing "ExceptionInfo"
+    (is (string? (clj->transit {:foo (ex-info "msg" {:some "data"})})))))
