@@ -2,7 +2,7 @@
   (:gen-class
    :name kixi.nybling
    :methods [[kinesisEventRecordToJson [com.amazonaws.services.lambda.runtime.events.KinesisEvent$KinesisEventRecord] java.lang.String]
-             [kinesisEventRecordToBaldrByteBuffer [com.amazonaws.services.lambda.runtime.events.KinesisEvent$KinesisEventRecord] java.io.ByteBuffer]])
+             [kinesisEventRecordToBaldrByteBuffer [com.amazonaws.services.lambda.runtime.events.KinesisEvent$KinesisEventRecord] java.nio.ByteBuffer]])
   (:require [baldr.core :as baldr :refer [baldr-writer]]
             [cheshire.core :as json]
             [cheshire.generate :refer [add-encoder encode-map]]
