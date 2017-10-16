@@ -1,26 +1,17 @@
 (ns kixi.nybling
-  (:require [clojure.edn :as edn]
-            [clojure.java.io :as io]
-            [cheshire.core :as json]
-            [cheshire.generate :refer [add-encoder encode-map]]
-            [cognitect.transit :as transit]
-            [taoensso.nippy :as nippy]
-            [kixi.log.timbre.appenders.logstash :refer [exception->map]])
-  (:import (com.fasterxml.jackson.core JsonGenerator JsonGenerationException)
-           (com.amazonaws.services.lambda.runtime.events 
-            KinesisEvent
-            KinesisEvent$KinesisEventRecord
-            KinesisEvent$Record)
-           (java.io ByteArrayOutputStream)
-           (com.fasterxml.jackson.core JsonGenerator))
-
   (:gen-class
    :name kixi.nybling
-   :methods [#^{:static true} [ednStringToJsonString [java.lang.String] java.lang.String]
-             #^{:static true} [nippyByteArrayToJsonString [bytes] java.lang.String]
-             #^{:static true} [kinesisEventRecordToJsonVersions [com.amazonaws.services.lambda.runtime.events.KinesisEvent$KinesisEventRecord] java.util.List]]))
-
-(def project-definition (some-> (io/resource "project.clj") slurp edn/read-string))
+   :methods [[kinesisEventRecordToJson [com.amazonaws.services.lambda.runtime.events.KinesisEvent$KinesisEventRecord] java.lang.String]
+             [kinesisEventRecordToBaldrByteBuffer [com.amazonaws.services.lambda.runtime.events.KinesisEvent$KinesisEventRecord] java.io.ByteBuffer]])
+  (:require [baldr.core :as baldr :refer [baldr-writer]]
+            [cheshire.core :as json]
+            [cheshire.generate :refer [add-encoder encode-map]]
+            [kixi.log.timbre.appenders.logstash :refer [exception->map]]
+            [taoensso.nippy :as nippy])
+  (:import [com.amazonaws.services.lambda.runtime.events KinesisEvent$KinesisEventRecord KinesisEvent$Record]
+           com.fasterxml.jackson.core.JsonGenerator
+           java.io.OutputStream
+           java.nio.ByteBuffer))
 
 (add-encoder java.lang.Throwable
              (fn encode-throwable
@@ -42,52 +33,51 @@
                [rp ^JsonGenerator jg]
                (.writeString jg (str "##" rp))))
 
-(defn edn-str-to-json-str
-  "I take an EDN string and convert it to a JSON string"
-  [e]
-  ((comp json/generate-string edn/read-string) e))
+(defn kinesis-event-record->json
+  [^KinesisEvent$KinesisEventRecord kinesis-event-record]
+  (let [^KinesisEvent$Record record (.getKinesis kinesis-event-record)
+        our-event (nippy/thaw (.array (.getData record)))]
+    (json/generate-string our-event)))
 
-(defn -ednStringToJsonString
-  [e]
-  (edn-str-to-json-str e))
-
-(defn nippy-byte-array-to-json-str
-  "I take a Nippy byte-array and convert it to a JSON string"
-  [e]
-  ((comp json/generate-string nippy/thaw) e))
-
-(defn -nippyByteArrayToJsonString
-  [e]
-  (nippy-byte-array-to-json-str e))
-
-(defn- clj->transit
-  ([m]
-   (clj->transit m :json))
-  ([m t]
-   (let [out (ByteArrayOutputStream. 4096)
-         writer (transit/writer out t)]
-     (transit/write writer m)
-     (.toString out))))
+(defn -kinesisEventRecordToJson
+  [^KinesisEvent$KinesisEventRecord kinesis-event-record]
+  (kinesis-event-record->json kinesis-event-record))
 
 (defn- wrap-event-with-meta
   [^KinesisEvent$Record record
    our-event]
   {:event our-event
    :partition-key (.getPartitionKey record)
-   :sequence-num (.getSequenceNumber record)
-   :dependency-versions {:transit "0.8.300"
-                         :cheshire "5.7.0"}})
+   :sequence-num (.getSequenceNumber record)})
 
-(defn kinesis-event-record->json-versions
+(def baldr-header-size 8)
+
+(def byte-array-class (Class/forName "[B"))
+
+(defn payload->baldr-byte-buffer
+  [payload]
+  (let [^bytes nippied-payload (nippy/freeze payload)
+        buffer (ByteBuffer/allocate (+ baldr-header-size
+                                       (alength nippied-payload)))
+        out (proxy [OutputStream] []
+              (write
+                ([b]
+                 (if (instance? byte-array-class b)
+                   (.put buffer ^bytes b)
+                   (.putInt buffer (int b))))
+                ([^bytes b off len]
+                 (.put buffer b off len))))]
+    ((baldr-writer out) nippied-payload)
+    (.rewind buffer)
+    buffer))
+
+(defn kinesis-event-record->baldr-byte-buffer
   [^KinesisEvent$KinesisEventRecord kinesis-event-record]
   (let [^KinesisEvent$Record record (.getKinesis kinesis-event-record)
-        our-event (nippy/thaw (.array (.getData record)))
-        json-for-elastic-search (json/generate-string our-event)
-        meta-wrapped-event (wrap-event-with-meta record our-event)
-        transit-json-for-S3 (clj->transit meta-wrapped-event)]
-    (list json-for-elastic-search
-          transit-json-for-S3)))
+        event-barray (.array (.getData record))
+        meta-wrapped-event (wrap-event-with-meta record event-barray)]
+    (payload->baldr-byte-buffer meta-wrapped-event)))
 
-(defn -kinesisEventRecordToJsonVersions
+(defn -kinesisEventRecordToBaldrByteBuffer
   [^KinesisEvent$KinesisEventRecord kinesis-event-record]
-  (kinesis-event-record->json-versions kinesis-event-record))
+  (kinesis-event-record->baldr-byte-buffer kinesis-event-record))
