@@ -1,4 +1,4 @@
-(defproject kixi/kixi.nybling "0.1.13-SNAPSHOT"
+(defproject kixi/kixi.nybling "0.1.14"
   :description "A tiny library that converts formats"
   :url "http://github.com/mastodonc/kixi.nybling"
   :license {:name "Eclipse Public License"
